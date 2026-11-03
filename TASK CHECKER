@@ -1,0 +1,242 @@
+import tkinter as tk
+from tkinter import messagebox
+import json
+import os
+
+# -------------------------------
+# Task Checker - Python Project
+# -------------------------------
+
+FILE_NAME = "tasks.json"
+tasks = []
+
+# Load saved tasks
+def load_tasks():
+    global tasks
+    if os.path.exists(FILE_NAME):
+        try:
+            with open(FILE_NAME, "r") as file:
+                tasks = json.load(file)
+        except (json.JSONDecodeError, OSError):
+            tasks = []
+
+# Save tasks
+def save_tasks():
+    with open(FILE_NAME, "w") as file:
+        json.dump(tasks, file, indent=4)
+
+# Update task list
+def refresh_tasks():
+    task_list.delete(0, tk.END)
+
+    for task in tasks:
+        status = "✓" if task["completed"] else "○"
+        task_list.insert(
+            tk.END, f"{status}  {task['name']}"
+        )
+
+    update_stats()
+
+# Add a new task
+def add_task():
+    name = task_entry.get().strip()
+
+    if not name:
+        messagebox.showwarning(
+            "Empty Task", "Please enter a task!"
+        )
+        return
+
+    tasks.append({
+        "name": name,
+        "completed": False
+    })
+
+    task_entry.delete(0, tk.END)
+    save_tasks()
+    refresh_tasks()
+
+# Mark task as completed
+def complete_task():
+    selected = task_list.curselection()
+
+    if not selected:
+        messagebox.showwarning(
+            "No Selection", "Select a task first!"
+        )
+        return
+
+    index = selected[0]
+    tasks[index]["completed"] = not tasks[index]["completed"]
+
+    save_tasks()
+    refresh_tasks()
+
+# Delete selected task
+def delete_task():
+    selected = task_list.curselection()
+
+    if not selected:
+        messagebox.showwarning(
+            "No Selection", "Select a task to delete!"
+        )
+        return
+
+    index = selected[0]
+    del tasks[index]
+
+    save_tasks()
+    refresh_tasks()
+
+# Update statistics
+def update_stats():
+    total = len(tasks)
+    completed = sum(
+        1 for task in tasks if task["completed"]
+    )
+    pending = total - completed
+
+    stats_label.config(
+        text=f"Total: {total}     "
+             f"Completed: {completed}     "
+             f"Pending: {pending}"
+    )
+
+# -------------------------------
+# Main Window
+# -------------------------------
+
+root = tk.Tk()
+root.title("Task Checker")
+root.geometry("550x620")
+root.configure(bg="#F4F6FA")
+root.resizable(False, False)
+
+# Title
+title = tk.Label(
+    root,
+    text="TASK CHECKER",
+    font=("Arial", 24, "bold"),
+    bg="#F4F6FA",
+    fg="#1E293B"
+)
+title.pack(pady=(30, 5))
+
+subtitle = tk.Label(
+    root,
+    text="Organize your day. Get things done.",
+    font=("Arial", 11),
+    bg="#F4F6FA",
+    fg="#64748B"
+)
+subtitle.pack(pady=(0, 25))
+
+# Input section
+input_frame = tk.Frame(root, bg="#F4F6FA")
+input_frame.pack(pady=10)
+
+task_entry = tk.Entry(
+    input_frame,
+    font=("Arial", 12),
+    width=29,
+    bd=1,
+    relief="solid"
+)
+task_entry.pack(side=tk.LEFT, padx=5, ipady=9)
+
+add_button = tk.Button(
+    input_frame,
+    text="+ Add",
+    font=("Arial", 10, "bold"),
+    bg="#2563EB",
+    fg="white",
+    activebackground="#1D4ED8",
+    activeforeground="white",
+    relief="flat",
+    padx=15,
+    pady=9,
+    command=add_task
+)
+add_button.pack(side=tk.LEFT, padx=5)
+
+# Task list section
+list_frame = tk.Frame(
+    root,
+    bg="white",
+    bd=0,
+    highlightbackground="#E2E8F0",
+    highlightthickness=1
+)
+list_frame.pack(padx=30, pady=20, fill=tk.BOTH, expand=True)
+
+list_title = tk.Label(
+    list_frame,
+    text="MY TASKS",
+    font=("Arial", 12, "bold"),
+    bg="white",
+    fg="#334155"
+)
+list_title.pack(anchor="w", padx=15, pady=15)
+
+task_list = tk.Listbox(
+    list_frame,
+    font=("Arial", 12),
+    bg="white",
+    fg="#334155",
+    selectbackground="#DBEAFE",
+    selectforeground="#1E293B",
+    relief="flat",
+    bd=0,
+    height=12,
+    activestyle="none"
+)
+task_list.pack(
+    padx=15, pady=5, fill=tk.BOTH, expand=True
+)
+
+# Action buttons
+button_frame = tk.Frame(root, bg="#F4F6FA")
+button_frame.pack(pady=10)
+
+complete_button = tk.Button(
+    button_frame,
+    text="✓ Complete / Undo",
+    font=("Arial", 10),
+    bg="#16A34A",
+    fg="white",
+    relief="flat",
+    padx=12,
+    pady=9,
+    command=complete_task
+)
+complete_button.pack(side=tk.LEFT, padx=5)
+
+delete_button = tk.Button(
+    button_frame,
+    text="Delete Task",
+    font=("Arial", 10),
+    bg="#DC2626",
+    fg="white",
+    relief="flat",
+    padx=15,
+    pady=9,
+    command=delete_task
+)
+delete_button.pack(side=tk.LEFT, padx=5)
+
+# Statistics
+stats_label = tk.Label(
+    root,
+    text="Total: 0     Completed: 0     Pending: 0",
+    font=("Arial", 10, "bold"),
+    bg="#F4F6FA",
+    fg="#475569"
+)
+stats_label.pack(pady=20)
+
+# Load existing tasks
+load_tasks()
+refresh_tasks()
+
+# Run application
+root.mainloop()
